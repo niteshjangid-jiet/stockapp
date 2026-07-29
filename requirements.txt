@@ -1,0 +1,12 @@
+streamlit
+yfinance
+pandas
+plotly
+ta
+textblob
+requests
+streamlit-extras
+streamlit-lottie
+kaleido
+scikit-learn
+numpy
