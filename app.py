@@ -207,28 +207,55 @@ if df.empty:
     st.stop()
 
 # Header
-c_hex = "#00FF87" if df['Close'].iloc[-1] >= df['Close'].iloc[-2] else "#FF4B2B"
+if len(df) >= 2:
+    prev_close = df['Close'].iloc[-2]
+    curr_close = df['Close'].iloc[-1]
+    diff = curr_close - prev_close
+    pct = (diff / prev_close) * 100 if prev_close != 0 else 0.0
+    c_hex = "#00FF87" if diff >= 0 else "#FF4B2B"
+    price_change_str = f"{diff:+.2f} ({pct:+.2f}%)"
+else:
+    curr_close = df['Close'].iloc[-1]
+    c_hex = "#00FF87"
+    price_change_str = "+0.00 (0.00%)"
+
+short_name = info.get('shortName') or ticker if isinstance(info, dict) else ticker
+sector_info = info.get('sector', 'Market') if isinstance(info, dict) else 'Market'
+exchange_info = info.get('exchange', 'N/A') if isinstance(info, dict) else 'N/A'
+
 st.markdown(f"""
 <div class="glass-card">
     <div style="display:flex; justify-content:space-between; align-items:center;">
         <div>
-            <h1 style="margin:0;">{info.get('shortName', ticker)}</h1>
-            <span style="color:var(--text-muted);">{info.get('sector', 'Market')} | {info.get('exchange', 'N/A')}</span>
+            <h1 style="margin:0;">{short_name}</h1>
+            <span style="color:var(--text-muted);">{sector_info} | {exchange_info}</span>
         </div>
         <div style="text-align:right;">
-            <div style="font-size:48px; font-weight:800; color:{c_hex}; font-family:var(--font-heading); text-shadow: 0 0 20px {c_hex}44;">${df['Close'].iloc[-1]:.2f}</div>
-            <div style="color:{c_hex};">{(df['Close'].iloc[-1]-df['Close'].iloc[-2]):+.2f} ({((df['Close'].iloc[-1]-df['Close'].iloc[-2])/df['Close'].iloc[-2]*100):+.2f}%)</div>
+            <div style="font-size:48px; font-weight:800; color:{c_hex}; font-family:var(--font-heading); text-shadow: 0 0 20px {c_hex}44;">${curr_close:.2f}</div>
+            <div style="color:{c_hex};">{price_change_str}</div>
         </div>
     </div>
 </div>
 """, unsafe_allow_html=True)
 
 # Metrics
+mcap_val = info.get('marketCap') if isinstance(info, dict) else None
+mcap_str = f"${mcap_val/1e9:.2f}B" if (mcap_val and isinstance(mcap_val, (int, float))) else "N/A"
+
+pe_val = info.get('trailingPE') if isinstance(info, dict) else None
+pe_str = f"{pe_val:.2f}" if (pe_val and isinstance(pe_val, (int, float))) else "N/A"
+
+high_val = info.get('fiftyTwoWeekHigh') if isinstance(info, dict) else None
+high_str = f"${high_val:.2f}" if (high_val and isinstance(high_val, (int, float))) else "N/A"
+
+beta_val = info.get('beta') if isinstance(info, dict) else None
+beta_str = f"{beta_val:.2f}" if (beta_val and isinstance(beta_val, (int, float))) else "N/A"
+
 m1, m2, m3, m4 = st.columns(4)
-with m1: st.markdown(f"<div class='metric-card'><div style='color:var(--text-muted); font-size:12px;'>MARKET CAP</div><div style='font-size:20px; font-weight:800;'>${info.get('marketCap', 0)/1e9:.2f}B</div></div>", unsafe_allow_html=True)
-with m2: st.markdown(f"<div class='metric-card'><div style='color:var(--text-muted); font-size:12px;'>P/E RATIO</div><div style='font-size:20px; font-weight:800;'>{info.get('trailingPE', 'N/A')}</div></div>", unsafe_allow_html=True)
-with m3: st.markdown(f"<div class='metric-card'><div style='color:var(--text-muted); font-size:12px;'>52W HIGH</div><div style='font-size:20px; font-weight:800;'>${info.get('fiftyTwoWeekHigh', 0):.2f}</div></div>", unsafe_allow_html=True)
-with m4: st.markdown(f"<div class='metric-card'><div style='color:var(--text-muted); font-size:12px;'>BETA</div><div style='font-size:20px; font-weight:800;'>{info.get('beta', 'N/A')}</div></div>", unsafe_allow_html=True)
+with m1: st.markdown(f"<div class='metric-card'><div style='color:var(--text-muted); font-size:12px;'>MARKET CAP</div><div style='font-size:20px; font-weight:800;'>{mcap_str}</div></div>", unsafe_allow_html=True)
+with m2: st.markdown(f"<div class='metric-card'><div style='color:var(--text-muted); font-size:12px;'>P/E RATIO</div><div style='font-size:20px; font-weight:800;'>{pe_str}</div></div>", unsafe_allow_html=True)
+with m3: st.markdown(f"<div class='metric-card'><div style='color:var(--text-muted); font-size:12px;'>52W HIGH</div><div style='font-size:20px; font-weight:800;'>{high_str}</div></div>", unsafe_allow_html=True)
+with m4: st.markdown(f"<div class='metric-card'><div style='color:var(--text-muted); font-size:12px;'>BETA</div><div style='font-size:20px; font-weight:800;'>{beta_str}</div></div>", unsafe_allow_html=True)
 
 # Tabs
 t1, t2, t3, t4 = st.tabs(["📈 Analysis", "💰 Financials", "🤖 AI Signal", "📰 News"])
@@ -241,22 +268,29 @@ with t1:
     st.plotly_chart(fig, use_container_width=True)
 
 with t2:
-    st.dataframe(financials.iloc[:10], use_container_width=True)
+    if isinstance(financials, pd.DataFrame) and not financials.empty:
+        st.dataframe(financials.iloc[:10], use_container_width=True)
+    else:
+        st.info("Financial statements not available for this ticker.")
 
 with t3:
-    y = df['Close'].values.reshape(-1, 1)
-    X = np.arange(len(y)).reshape(-1, 1)
-    lr = LinearRegression().fit(X, y)
-    pred = lr.predict([[len(y)]])[0][0]
-    
-    st.markdown(f"""
-    <div class="glass-card" style="border-left:5px solid #00FF87; background:rgba(0,255,135,0.05);">
-        <h3>Neural Trend Projection</h3>
-        <p>Based on current volume and price velocity, our AI projects the following target:</p>
-        <div style="font-size:32px; font-weight:800; color:#00FF87;">${pred:.2f}</div>
-        <div style="margin-top:10px; font-size:12px; color:var(--text-muted);">CONFIDENCE SCORE: 84.2%</div>
-    </div>
-    """, unsafe_allow_html=True)
+    clean_df = df.dropna(subset=['Close'])
+    if len(clean_df) >= 2:
+        y = clean_df['Close'].values.reshape(-1, 1)
+        X = np.arange(len(y)).reshape(-1, 1)
+        lr = LinearRegression().fit(X, y)
+        pred = lr.predict([[len(y)]])[0][0]
+        
+        st.markdown(f"""
+        <div class="glass-card" style="border-left:5px solid #00FF87; background:rgba(0,255,135,0.05);">
+            <h3>Neural Trend Projection</h3>
+            <p>Based on current volume and price velocity, our AI projects the following target:</p>
+            <div style="font-size:32px; font-weight:800; color:#00FF87;">${pred:.2f}</div>
+            <div style="margin-top:10px; font-size:12px; color:var(--text-muted);">CONFIDENCE SCORE: 84.2%</div>
+        </div>
+        """, unsafe_allow_html=True)
+    else:
+        st.warning("Insufficient data points for AI trend prediction.")
 
 with t4:
     if news:
