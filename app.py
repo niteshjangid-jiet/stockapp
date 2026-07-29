@@ -199,8 +199,28 @@ def fetch_data(t, p="1y"):
 
 with st.sidebar:
     st.markdown(f"<h2 style='color:#00D2FF'>StockVision Pro</h2>", unsafe_allow_html=True)
-    ticker = st.text_input("Search Ticker", value="AAPL").upper()
+    
+    # Popular presets + custom input
+    preset_stocks = [
+        "Custom Search", "AAPL (Apple)", "NVDA (Nvidia)", "TSLA (Tesla)", 
+        "MSFT (Microsoft)", "GOOGL (Google)", "AMZN (Amazon)",
+        "RELIANCE.NS (Reliance)", "TCS.NS (TCS)", "INFY.NS (Infosys)", 
+        "TATAMOTORS.NS (Tata Motors)", "BTC-USD (Bitcoin)"
+    ]
+    
+    selected_preset = st.selectbox("Popular Stocks", preset_stocks)
+    
+    if selected_preset == "Custom Search":
+        ticker_input = st.text_input("Search Ticker (e.g., TSLA, RELIANCE.NS)", value="AAPL")
+    else:
+        # Extract symbol before bracket
+        ticker_input = selected_preset.split(" ")[0]
+        
+    ticker = ticker_input.strip().upper()
     period = st.selectbox("Timeframe", ["1mo", "3mo", "6mo", "1y", "5y"], index=3)
+    
+    st.caption("📌 Tip: For Indian stocks (NSE), add `.NS` (e.g. `RELIANCE.NS`, `TCS.NS`)")
+    
     if st.button("Logout"):
         st.session_state.logged_in = False
         st.rerun()
