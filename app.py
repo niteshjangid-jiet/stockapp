@@ -77,7 +77,7 @@ if not st.session_state.logged_in:
     .stApp { background-color: var(--bg-primary); color: var(--text-primary); font-family: 'Inter', sans-serif; }
     .stTextInput input { background-color: var(--bg-card); border: 1px solid var(--border); color: var(--text-primary); border-radius: 8px; padding: 10px; }
     .stButton button { background-color: var(--accent-blue); color: white; border: none; border-radius: 8px; font-weight: 600; padding: 0.5rem 1rem; transition: all 0.3s ease; }
-    header[data-testid="stHeader"] { visibility: hidden; }
+    header[data-testid="stHeader"] { background: transparent !important; }
     footer { visibility: hidden; }
     .auth-container { 
         max-width: 450px; 
@@ -145,7 +145,35 @@ st.markdown("""
 }
 
 .stApp { background: radial-gradient(circle at 50% 50%, #0D1117 0%, #05070A 100%); color: var(--text-primary); font-family: 'Inter', sans-serif; }
-header[data-testid="stHeader"] { visibility: hidden; }
+header[data-testid="stHeader"] { 
+    background: transparent !important; 
+    z-index: 100000 !important;
+}
+
+[data-testid="stSidebarCollapseButton"], 
+[data-testid="collapsedControl"],
+button[data-testid="baseButton-header"],
+header button {
+    background: rgba(20, 24, 35, 0.95) !important;
+    border: 1px solid var(--accent-blue) !important;
+    border-radius: 8px !important;
+    color: var(--accent-blue) !important;
+    visibility: visible !important;
+    display: flex !important;
+    z-index: 100001 !important;
+    box-shadow: 0 0 12px rgba(0, 210, 255, 0.5) !important;
+}
+
+[data-testid="stSidebarCollapseButton"] svg, 
+[data-testid="collapsedControl"] svg,
+header button svg {
+    fill: var(--accent-blue) !important;
+    color: var(--accent-blue) !important;
+}
+
+section[data-testid="stSidebar"] {
+    z-index: 100002 !important;
+}
 footer { visibility: hidden; }
 .block-container { padding-top: 5rem !important; }
 
