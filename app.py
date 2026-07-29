@@ -173,13 +173,18 @@ def get_ticker_tape():
     names = ["S&P 500", "NASDAQ", "DOW 30", "BITCOIN", "GOLD"]
     items = []
     try:
-        data = yf.download(indices, period="1d", progress=False)['Close']
+        data = yf.download(indices, period="5d", progress=False)['Close']
         for idx, name in zip(indices, names):
-            val = data[idx].iloc[-1]
-            chg = ((val - data[idx].iloc[0])/data[idx].iloc[0])*100
-            color = "#00FF87" if chg >= 0 else "#FF4B2B"
-            items.append(f'<span class="ticker-item">{name}: ${val:,.2f} <span style="color:{color}">{chg:+.2f}%</span></span>')
-    except: pass
+            if idx in data:
+                s = data[idx].dropna()
+                if len(s) >= 1:
+                    val = s.iloc[-1]
+                    first_val = s.iloc[0]
+                    chg = ((val - first_val) / first_val) * 100 if first_val != 0 else 0.0
+                    color = "#00FF87" if chg >= 0 else "#FF4B2B"
+                    items.append(f'<span class="ticker-item">{name}: ${val:,.2f} <span style="color:{color}">{chg:+.2f}%</span></span>')
+    except Exception:
+        pass
     return "".join(items)
 
 st.markdown(f'<div class="ticker-wrap"><div class="ticker">{get_ticker_tape()}</div></div>', unsafe_allow_html=True)
@@ -207,15 +212,20 @@ if df.empty:
     st.stop()
 
 # Header
-if len(df) >= 2:
-    prev_close = df['Close'].iloc[-2]
-    curr_close = df['Close'].iloc[-1]
+valid_close = df['Close'].dropna()
+if len(valid_close) >= 2:
+    prev_close = valid_close.iloc[-2]
+    curr_close = valid_close.iloc[-1]
     diff = curr_close - prev_close
     pct = (diff / prev_close) * 100 if prev_close != 0 else 0.0
     c_hex = "#00FF87" if diff >= 0 else "#FF4B2B"
     price_change_str = f"{diff:+.2f} ({pct:+.2f}%)"
+elif len(valid_close) == 1:
+    curr_close = valid_close.iloc[-1]
+    c_hex = "#00FF87"
+    price_change_str = "+0.00 (0.00%)"
 else:
-    curr_close = df['Close'].iloc[-1]
+    curr_close = 0.0
     c_hex = "#00FF87"
     price_change_str = "+0.00 (0.00%)"
 
